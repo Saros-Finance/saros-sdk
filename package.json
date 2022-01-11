@@ -1,5 +1,5 @@
 {
-  "name": "saros-sdk",
+  "name": "@saros/sdk",
   "version": "1.0.0",
   "description": "Saros swap - A DeFi Super-Network Built on Solana",
   "main": "src/index.js",
