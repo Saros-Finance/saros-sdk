@@ -13,14 +13,14 @@ Use your environment's package manager to install saros-sdk into your project.
   
 
 ```bash
-yarn add @saros/sdk
+yarn add @saros-finance/sdk
 
 ```
 
   
 
 ```bash
-npm install @saros/sdk
+npm install @saros-finance/sdk
 
 ```
 
@@ -34,7 +34,7 @@ npm install @saros/sdk
 
 import {
   getSwapAmountSaros, swapSaros, createPool, getPoolInfo, depositAllTokenTypes, withdrawAllTokenTypes, convertBalanceToWei, getTokenMintInfo, getTokenAccountInfo, getInfoTokenByMint, genConnectionSolana
-} from '@saros/sdk'
+} from '@saros-finance/sdk'
 
 import BN from 'bn.js'
 import { PublicKey } from '@solana/web3.js'
