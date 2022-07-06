@@ -1,6 +1,6 @@
 {
   "name": "@saros-finance/sdk",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Saros swap - A DeFi Super-Network Built on Solana",
   "main": "src/index.js",
   "scripts": {
@@ -21,6 +21,8 @@
     "solana",
     "sdk",
     "crypto",
+    "farm",
+    "stake",
     "finance"
   ],
   "author": "support@coin98.com",
@@ -40,6 +42,8 @@
     "bs58": "^4.0.1",
     "buffer-layout": "^1.2.2",
     "crypto-js": "^4.1.1",
+    "graphql": "^16.0.1",
+    "graphql-request": "^3.6.1",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

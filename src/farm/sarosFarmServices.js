@@ -7,6 +7,9 @@ import { BLOCKS_PER_YEAR, getPriceBaseId } from '../functions';
 import { getPoolInfo } from '../swap/sarosSwapServices';
 import { genConnectionSolana } from '../common';
 import { get } from 'lodash';
+import { GraphQLClient, gql } from 'graphql-request';
+
+const gqlClient = new GraphQLClient('https://graphql.saros.finance/');
 
 export class SarosFarmService {
   static async stakePool(
@@ -397,7 +400,45 @@ export class SarosFarmService {
     );
   }
 
-  static getDetailPool() {}
+  static async getListPool() {
+    try {
+      const query = gql`
+        {
+          farms {
+            lpAddress
+            poolLpAddress
+            poolAddress
+            lpAddress
+            token0
+            token1
+            token0Id
+            token1Id
+            rewards {
+              address
+              poolRewardAddress
+              rewardPerBlock
+            }
+            startBlock
+            endBlock
+          }
+        }
+      `;
+
+      const response = await gqlClient.request(query);
+      const data = get(response, 'farms', []);
+      const newListFarm = data.map((item) => {
+        const dataFarm = SarosFarmService.fetchDetailPoolFarm(item);
+        return {
+          ...item,
+          ...dataFarm,
+        };
+      });
+      return newListFarm;
+    } catch (err) {
+      return `Get list pool error ${JSON.stringify(err)}`;
+      return [];
+    }
+  }
 
   static async calculateRewardOneYear(reward, connection) {
     const { poolRewardAddress, id } = reward;
@@ -423,7 +464,7 @@ export class SarosFarmService {
       lpAddress,
       poolAddress,
     } = farmParam;
-    
+
     // Fetch pool data
     const dataPoolFarm = await SarosFarmService.getPoolData(
       connection,
@@ -442,7 +483,7 @@ export class SarosFarmService {
     );
     const amountToken0InPool = get(dataPoolInfo, 'amountToken0InPool', 0);
     const amountToken1InPool = get(dataPoolInfo, 'amountToken1InPool', 0);
-    
+
     const toke0Price = await getPriceBaseId(token0Id);
     const toke1Price = await getPriceBaseId(token1Id);
 
