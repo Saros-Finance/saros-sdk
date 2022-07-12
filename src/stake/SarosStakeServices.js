@@ -2,16 +2,16 @@
 import { PublicKey, Transaction } from '@solana/web3.js';
 import { SolanaService } from '../SolanaService';
 import { TokenProgramService } from '../TokenProgramService';
-import { SarosFarmInstructionService } from './sarosFarmServiceIntructions';
 import { BLOCKS_PER_YEAR, getPriceBaseId } from '../functions';
 import { getPoolInfo } from '../swap/sarosSwapServices';
 import { genConnectionSolana } from '../common';
 import { get } from 'lodash';
 import { GraphQLClient, gql } from 'graphql-request';
+import { SarosFarmInstructionService } from '../farm/sarosFarmServiceIntructions';
 
 const gqlClient = new GraphQLClient('https://graphql.saros.finance/');
 
-export class SarosFarmService {
+export class SarosStakeServices {
   static async stakePool(
     connection,
     payerAccount,
@@ -276,7 +276,7 @@ export class SarosFarmService {
         );
 
       const [userPoolRewardAddress] =
-        await SarosFarmService.findUserPoolRewardAddress(
+        await SarosStakeServices.findUserPoolRewardAddress(
           payerAccount.publicKey,
           poolRewardAddress,
           sarosFarmProgramAddress
@@ -288,7 +288,7 @@ export class SarosFarmService {
           sarosFarmProgramAddress
         );
 
-      const dataPoolReward = await SarosFarmService.getPoolRewardData(
+      const dataPoolReward = await SarosStakeServices.getPoolRewardData(
         connection,
         poolRewardAddress
       );
@@ -404,17 +404,13 @@ export class SarosFarmService {
     try {
       const query = gql`
         {
-          farms {
-            lpAddress
-            poolLpAddress
+          stakes {
+            address
             poolAddress
-            lpAddress
-            token0
-            token1
-            token0Id
-            token1Id
+            tokenId
             rewards {
               address
+              id
               poolRewardAddress
               rewardPerBlock
             }
@@ -425,10 +421,13 @@ export class SarosFarmService {
       `;
 
       const response = await gqlClient.request(query);
-      const data = get(response, 'farms', []);
+      const data = get(response, 'stakes', []).map((item) => ({
+        ...item,
+        lpAddress: get(item, 'address', ''),
+      }));
       const newListFarm = await Promise.all(
-        data.map(async (item) => {
-          const dataFarm = SarosFarmService.fetchDetailPoolFarm(item);
+        [data[0]].map(async (item) => {
+          const dataFarm = await SarosStakeServices.fetchDetailPoolFarm(item);
           return {
             ...item,
             ...dataFarm,
@@ -457,17 +456,10 @@ export class SarosFarmService {
 
   static async fetchDetailPoolFarm(farmParam) {
     const connection = genConnectionSolana();
-    const {
-      poolLpAddress,
-      token0Id,
-      token1Id,
-      rewards,
-      lpAddress,
-      poolAddress,
-    } = farmParam;
+    const { tokenId, rewards, poolAddress } = farmParam;
 
     // Fetch pool data
-    const dataPoolFarm = await SarosFarmService.getPoolData(
+    const dataPoolFarm = await SarosStakeServices.getPoolData(
       connection,
       new PublicKey(poolAddress)
     );
@@ -478,18 +470,8 @@ export class SarosFarmService {
     const totalStaked = get(fetchInfoAccountPool.value, 'amount', 0);
 
     // Fetch pool liquidity info
-    const dataPoolInfo = await this.fetchInfoPoolLpAddress(
-      poolLpAddress,
-      connection
-    );
-    const amountToken0InPool = get(dataPoolInfo, 'amountToken0InPool', 0);
-    const amountToken1InPool = get(dataPoolInfo, 'amountToken1InPool', 0);
+    const stakingPrice = await getPriceBaseId(tokenId);
 
-    const toke0Price = await getPriceBaseId(token0Id);
-    const toke1Price = await getPriceBaseId(token1Id);
-
-    const totalPriceToken =
-      amountToken0InPool * toke0Price + amountToken1InPool * toke1Price;
     const rewardOneYearUSD = await Promise.all(
       rewards.map(
         async (reward) => await this.calculateRewardOneYear(reward, connection)
@@ -501,14 +483,7 @@ export class SarosFarmService {
       return total;
     }, 0);
 
-    const lpInfo = await TokenProgramService.getTokenMintInfo(
-      connection,
-      new PublicKey(lpAddress)
-    );
-
-    const totalSupplyLP = parseFloat(lpInfo.supply.toString());
-    const priceLp = totalPriceToken / totalSupplyLP;
-    const liquidityUsd = priceLp * totalStaked;
+    const liquidityUsd = stakingPrice * totalStaked;
 
     const apr = (totalRewardOneYearUSD / liquidityUsd) * 100;
     return {

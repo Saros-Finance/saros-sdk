@@ -32,11 +32,12 @@ import sarosSdk, {
   getInfoTokenByMint,
   genConnectionSolana,
 } from '@saros-finance/sdk';
+import { GraphQLClient, gql } from 'graphql-request';
 
 import BN from 'bn.js';
 import { PublicKey } from '@solana/web3.js';
 
-const { SarosFarmService } = sarosSdk;
+const { SarosFarmService, SarosStakeServices } = sarosSdk;
 
 const TOKEN_PROGRAM_ID = new PublicKey(
   'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
@@ -108,7 +109,7 @@ const farmParam = {
       poolRewardAddress: 'AC3FyChJwuU7EY9h4BqzjcN8CtGD7YRrAbeRdjcqe1AW',
       rewardPerBlock: 6600000,
       rewardTokenAccount: 'F6aHSR3ChwCXD67wrX2ZBHMkmmU9Gfm9QQmiTBrKvsmJ',
-      _id: '62a83776a2ba4e0adbd95f85',
+      id: 'coin98'
     },
   ],
   token0: 'C98A4nkJXhpVZNAZdHUA95RpTF3T4whtQubL3YobiUX9',
@@ -295,6 +296,27 @@ const onRemoveLiqPool = async () => {
   return `Your transaction hash ${result.hash}`;
 };
 
+// Query all Farm on Saros
+const getListFarmSaros = async () => {
+  try {
+    const response = await SarosFarmService.getListPool()
+    return response
+  } catch(err) {
+    return []
+  }
+}
+
+// Query all Staking on Saros
+const getListStakeSaros = async () => {
+  try {
+    const response = await SarosStakeServices.getListPool()
+    return response
+  } catch(err) {
+    return []
+  }
+}
+
+// Stake balance into pool on Saros
 const onStakePool = async () => {
   const hash = await SarosFarmService.stakePool(
     connection,
