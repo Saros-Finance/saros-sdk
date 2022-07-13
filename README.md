@@ -299,7 +299,7 @@ const onRemoveLiqPool = async () => {
 // Query all Farm on Saros
 const getListFarmSaros = async () => {
   try {
-    const response = await SarosFarmService.getListPool()
+    const response = await SarosFarmService.getListPool({page: 1, size: 2})
     return response
   } catch(err) {
     return []
@@ -309,7 +309,7 @@ const getListFarmSaros = async () => {
 // Query all Staking on Saros
 const getListStakeSaros = async () => {
   try {
-    const response = await SarosStakeServices.getListPool()
+    const response = await SarosStakeServices.getListPool({page: 1, size: 2})
     return response
   } catch(err) {
     return []

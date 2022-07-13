@@ -400,7 +400,9 @@ export class SarosStakeServices {
     );
   }
 
-  static async getListPool() {
+  static async getListPool({page, size}) {
+    if (page === 0) return []
+
     try {
       const query = gql`
         {
@@ -425,8 +427,13 @@ export class SarosStakeServices {
         ...item,
         lpAddress: get(item, 'address', ''),
       }));
+
+      const limit = parseInt(size)
+      const skip = parseInt(page - 1) * limit
+      const listStake = data.slice(skip, skip + limit)
+
       const newListFarm = await Promise.all(
-        [data[0]].map(async (item) => {
+        listStake.map(async (item) => {
           const dataFarm = await SarosStakeServices.fetchDetailPoolFarm(item);
           return {
             ...item,
@@ -436,7 +443,7 @@ export class SarosStakeServices {
       );
       return newListFarm;
     } catch (err) {
-      return `Get list pool error ${JSON.stringify(err)}`;
+      return `Get list stake error ${JSON.stringify(err)}`;
     }
   }
 

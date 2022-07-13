@@ -400,7 +400,9 @@ export class SarosFarmService {
     );
   }
 
-  static async getListPool() {
+  static async getListPool({ page, size }) {
+    if (page === 0) return []
+
     try {
       const query = gql`
         {
@@ -426,8 +428,13 @@ export class SarosFarmService {
 
       const response = await gqlClient.request(query);
       const data = get(response, 'farms', []);
+
+      const limit = parseInt(size)
+      const skip = parseInt(page - 1) * limit
+      const listFarm = data.slice(skip, skip + limit)
+
       const newListFarm = await Promise.all(
-        data.map(async (item) => {
+        listFarm.map(async (item) => {
           const dataFarm = SarosFarmService.fetchDetailPoolFarm(item);
           return {
             ...item,
@@ -437,7 +444,7 @@ export class SarosFarmService {
       );
       return newListFarm;
     } catch (err) {
-      return `Get list pool error ${JSON.stringify(err)}`;
+      return `Get list farm error ${JSON.stringify(err)}`;
     }
   }
 
