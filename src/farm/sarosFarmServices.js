@@ -400,8 +400,27 @@ export class SarosFarmService {
     );
   }
 
+  static async getListPoolLiquidity() {
+    try {
+      const query = gql`
+        {
+          pairs {
+            id
+            fee24h
+            feeAPR
+          }
+        }
+      `;
+
+      const response = await gqlClient.request(query);
+      return get(response, 'data.pairs', []);
+    } catch (err) {
+      return [];
+    }
+  }
+
   static async getListPool({ page, size }) {
-    if (page === 0) return []
+    if (page === 0) return [];
 
     try {
       const query = gql`
@@ -410,7 +429,6 @@ export class SarosFarmService {
             lpAddress
             poolLpAddress
             poolAddress
-            lpAddress
             token0
             token1
             token0Id
@@ -425,20 +443,25 @@ export class SarosFarmService {
           }
         }
       `;
-
+      const listPoolLiquidity = await this.getListPoolLiquidity();
       const response = await gqlClient.request(query);
       const data = get(response, 'farms', []);
 
-      const limit = parseInt(size)
-      const skip = parseInt(page - 1) * limit
-      const listFarm = data.slice(skip, skip + limit)
+      const limit = parseInt(size);
+      const skip = parseInt(page - 1) * limit;
+      const listFarm = data.slice(skip, skip + limit);
 
       const newListFarm = await Promise.all(
         listFarm.map(async (item) => {
           const dataFarm = SarosFarmService.fetchDetailPoolFarm(item);
+          const infoLiquidity = listPoolLiquidity.find(
+            (liquidity) => item.lpAddress === liquidity.id
+          );
           return {
             ...item,
             ...dataFarm,
+            fee24h: get(infoLiquidity, 'fee24h'),
+            feeAPR: get(infoLiquidity, 'feeAPR'),
           };
         })
       );
